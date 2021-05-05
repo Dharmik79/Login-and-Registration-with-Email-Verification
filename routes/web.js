@@ -1,4 +1,6 @@
 const reqController = require('../app/controllers/user')
+const authController = require('../app/controllers/auth')
+const adminController=require('../app/controllers/admin')
 const auth=require('../app/middlewares/auth')
 
 const adminAuth=require('../app/middlewares/adminAuth')
@@ -11,35 +13,36 @@ const register=require('../app/middlewares/register')
 function initRoutes(app) {
 
 
-    app.get('/login',login,reqController().login);
-    app.post('/login', reqController().postlogin);
+    app.get('/login',login,authController().login);
+    app.post('/login', authController().postlogin);
 
-    app.get('/register',register,reqController().register);
-    app.post('/register', reqController().postregister);
+    app.get('/register',register,authController().register);
+    app.post('/register', authController().postregister);
 
     app.get('/',auth,reqController().home);
-    app.get('/logout',logout,reqController().logout)
-    app.get('/auth/:token',reqController().activateAccount);
-    app.get('/adminhome',adminAuth,reqController().adminhome);
+    app.get('/logout',logout,authController().logout)
+    app.get('/auth/:token',authController().activateAccount);
+    app.get('/adminhome',adminAuth,adminController().adminhome);
     
 
     app.get('/update',updateAuth,reqController().update)
     app.post('/update',updateAuth,reqController().updateuser)
-    app.get('/update/:id',adminAuth,reqController().updateAdmin)
 
-    app.get('/delete/:id',adminAuth,reqController().deleteuser)
+    app.get('/update/:id',adminAuth,adminController().updateAdmin)
 
-    app.post('/updateUserByAdmin',adminAuth,reqController().postupdateAdmin);
+    app.get('/delete/:id',adminAuth,adminController().deleteuser)
 
-    app.get('/add',adminAuth,reqController().addUser);
-    app.post('/add',adminAuth,reqController().postaddUser);
+    app.post('/updateUserByAdmin',adminAuth,adminController().postupdateAdmin);
+
+    app.get('/add',adminAuth,adminController().addUser);
+    app.post('/add',adminAuth,adminController().postaddUser);
    
-    app.get('/forget',reqController().forget);
-    app.post('/forget',reqController().postforget)
+    app.get('/forget',authController().forget);
+    app.post('/forget',authController().postforget)
     
-     app.get('/forgetPassword/:token',reqController().forgetPassword);
+     app.get('/forgetPassword/:token',authController().forgetPassword);
 
-     app.post('/forgetPassword',reqController().postforgetPassword);
+     app.post('/forgetPassword',authController().postforgetPassword);
 }
 
 module.exports = initRoutes
