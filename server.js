@@ -9,7 +9,7 @@ const session = require('express-session')
 app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({
-    extended: false
+    extended: true
 }))
 const PORT = process.env.PORT || 3000;
 

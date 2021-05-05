@@ -4,17 +4,21 @@ const auth=require('../app/middlewares/auth')
 const adminAuth=require('../app/middlewares/adminAuth')
 const updateAuth=require('../app/middlewares/update')
 
+const logout=require('../app/middlewares/logout')
+const login=require('../app/middlewares/login')
+
+const register=require('../app/middlewares/register')
 function initRoutes(app) {
 
 
-    app.get('/login', reqController().login);
+    app.get('/login',login,reqController().login);
     app.post('/login', reqController().postlogin);
 
-    app.get('/register', reqController().register);
+    app.get('/register',register,reqController().register);
     app.post('/register', reqController().postregister);
 
     app.get('/',auth,reqController().home);
-    app.get('/logout',auth,reqController().logout)
+    app.get('/logout',logout,reqController().logout)
     app.get('/auth/:token',reqController().activateAccount);
     app.get('/adminhome',adminAuth,reqController().adminhome);
     

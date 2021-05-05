@@ -369,10 +369,9 @@ function reqController() {
             } catch (e) {
                 console.log(e)
             }
-
-
         },
         login(req, res) {
+
             res.render('login')
         },
         logout(req, res) {
@@ -397,6 +396,7 @@ function reqController() {
                 req.logIn(user, (err) => {
                     if (err) {
                         console.log(info.message)
+                      
                         return next(err);
                     }
 
@@ -409,6 +409,7 @@ function reqController() {
             res.render('register')
         },
         home(req, res) {
+            
             res.render('home')
         },
         async postregister(req, res) {
@@ -459,8 +460,6 @@ function reqController() {
                         res.rdirect('/login')
                     }
                 })
-
-
 
             } catch (err) {
                 console.log(err)
@@ -524,7 +523,7 @@ function reqController() {
             const users = await modelSchema.find({
                 role: "User"
             })
-            console.log(users)
+           
             res.render('adminhome', {
                 users: users
             })
