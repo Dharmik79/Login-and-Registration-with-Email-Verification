@@ -5,6 +5,9 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const passport = require('passport')
 const nodemailer = require("nodemailer");
+const blogSchema = require('../models/blog')
+const categorySchema = require('../models/category')
+
 const {
     model
 } = require('mongoose')
@@ -25,7 +28,7 @@ function reqController() {
         return req.user.role === 'Admin' ? '/adminhome' : '/'
     }
     return {
-        
+
         update(req, res) {
             const {
                 role,
@@ -103,10 +106,167 @@ function reqController() {
             }
         },
         home(req, res) {
-            
+
             res.render('home')
         },
-        
+        createBlog(req, res) {
+            res.render('createBlog', {
+                user: req.user
+            })
+        },
+        async postcreateBlog(req, res) {
+            const {
+                title,
+                body,
+                category,
+                active
+            } = req.body
+            try {
+                await categorySchema.findOne({
+                    name: category
+                }, async (err, docs) => {
+                    if (err) {
+                        console.log("No record Found")
+                        return res.redirect('/')
+                    }
+
+                    if (!docs) {
+                        console.log("No category for this schema So inseting new category")
+                        let cat = new categorySchema({
+                            name: category,
+                            desc: body
+                        })
+                        await cat.save().then(async (result) => {
+                            console.log("Category Added Successfully")
+                            const user_id = req.user.id
+                            const category_id = cat._id
+
+                            let blog = new blogSchema({
+                                title: title,
+                                is_active: active,
+                                body: body,
+                                user_id: user_id,
+                                category_id: category_id
+                            })
+                            await blog.save().then((result) => {
+                                console.log("Blog Added Successfully")
+                                return res.redirect('/')
+                            }).catch((err) => {
+                                console.log(err)
+                                return res.redirect('/createBlog')
+                            })
+
+                            return res.redirect('/')
+                        }).catch((err) => {
+                            console.log("Error Ocured at blog inserton");
+                            return res.redirect('/createBlog')
+                        })
+                        return res.redirect('/')
+                    }
+
+                    const user_id = req.user.id
+                    const category_id = docs._id
+
+                    let blog = new blogSchema({
+                        title: title,
+                        is_active: active,
+                        body: body,
+                        user_id: user_id,
+                        category_id: category_id
+                    })
+                    await blog.save().then((result) => {
+                        console.log("Blog Added Successfully")
+                        return res.redirect('/')
+                    }).catch((err) => {
+                        console.log(err)
+                        return res.redirect('createBlog')
+                    })
+
+                    return res.redirect('/')
+
+
+
+
+
+                })
+
+                res.render('home')
+            } catch (err) {
+                console.log(err)
+                return res.redirect('/createBlog')
+            }
+        },
+        async myBlog(req,res)
+        {
+            try{
+            await blogSchema.find({user_id:req.user.id},async(err,docs)=>{
+                if(err)
+                {
+                    console.log(err)
+                    return res.redirect('/')
+                }
+            
+         res.render('myBlog',{blogs:docs})     
+
+            })
+        }
+        catch(err)
+        {
+            console.log(err)
+            return res.redirect('/')
+        }
+        },
+        async updateBlog(req,res)
+        {
+              const id=req.params.id
+              await blogSchema.findById(id,(err,docs)=>{
+                  if(err)
+                  {
+                      console.log(err)
+                      return res.redirect('/updateBlog')
+                  }
+                  res.render('updateBlog',{blog:docs})
+              })
+             return res.redirect('/updateBlog')
+              
+        },
+        async deleteBlog(req,res)
+        {
+            const id=req.params.id
+
+            await blogSchema.findByIdAndDelete(id,(err,docs)=>{
+                if(err)
+                {
+                    console.log(err)
+                  return  res.redirect('/myBlog')
+                }
+                console.log("BLog deleted Successfully")
+              return   res.redirect('/myBlog')
+
+            })
+           return  res.redirect('/myBlog')
+        },
+       async  postUpdateBlog(req,res)
+        {
+            const {id,title,body,active}=req.body
+            await blogSchema.findByIdAndUpdate(id,{
+                   title: title,
+                        is_active: active,
+                        body: body,
+                       
+            },(err,docs)=>{
+                if(err)
+                {
+                    console.log(err)
+                    res.redirect('/myBlog')
+                }
+                console.log("Blog Updated")
+                res.redirect('/myBlog')
+
+            })
+
+            return res.redirect('/myBlog')
+        }
     }
 }
 

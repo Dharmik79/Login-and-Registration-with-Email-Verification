@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Blog</title>
+    
+</head>
+<body>
+   <h1>Update Blog</h1>
+   
+     <form action='/updateBlog' method="POST"> 
+        <input type="hidden" name="id" value="<%= blog._id%>">
+        <input type="text" name="title" required placeholder="Title" value="<%= blog.title %>"><br>
+        <textarea name="body" placeholder="Description" required ><%= blog.body %></textarea><br>
+             <% if(blog.is_active){%>
+        <input type="radio" name="active" value="true" checked>Active
+         <input type="radio" name="active" value="false">InActive<br>
+        <%}else{%>
+       <input type="radio" name="active" value="true" >Active
+         <input type="radio" name="active" value="false"checked>InActive<br>
+        <%}%>
+        <button type="submit">SUBMIT</button><br><br><br>
+
+    </form>
+</body>
+</html>
