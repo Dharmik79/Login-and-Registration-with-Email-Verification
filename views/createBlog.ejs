@@ -10,9 +10,17 @@
       <form action='/createBlog' method="POST"> 
         <input type="text" name="title" required placeholder="Title"><br>
         <textarea name="body" placeholder="Description" required></textarea><br>
-        <input type="text" name="category" required placeholder="Category"><br>
         <input type="radio" name="active" value="true" checked>Active
         <input type="radio" name="active" value="false">InActive<br>
+
+        <label for="category">Choose a Category:</label>
+
+<select name="category" multiple>
+    <% categories.forEach(function(category){ %>
+  <option value="<%= category._id%>"><%= category.name %></option>
+ 
+  <%})%>
+</select>
         <button type="submit">SUBMIT</button><br><br><br>
 
     </form>

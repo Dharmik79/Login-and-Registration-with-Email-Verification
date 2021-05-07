@@ -51,12 +51,17 @@ function initRoutes(app) {
 
     app.get('/myBlog',auth,reqController().myBlog)
     
-    app.get('/updateBlog/:id',auth,reqController().updateBlog)
+    app.get('/updateBlog/:id',updateAuth,reqController().updateBlog)
 
-    app.get('/deleteBlog/:id',auth,reqController().deleteBlog)
+    app.get('/deleteBlog/:id',updateAuth,reqController().deleteBlog)
 
-    app.post('/updateBlog',auth,reqController().postUpdateBlog)
+    app.post('/updateBlog',updateAuth,reqController().postUpdateBlog)
 
+
+    // Admin Dashboard
+    app.get('/dashboard',adminAuth,adminController().adminDashboard)
+
+    app.get('/adminBlog/:id',adminAuth,adminController().adminBlog)
 }
 
 module.exports = initRoutes

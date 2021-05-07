@@ -109,12 +109,21 @@ function reqController() {
 
             res.render('home')
         },
-        createBlog(req, res) {
-            res.render('createBlog', {
-                user: req.user
-            })
+        async createBlog(req, res) {
+            const category = await categorySchema.find();
+
+            if (category) {
+                res.render('createBlog', {
+                    categories: category
+                })
+            }
+            res.redirect('/')
+
         },
         async postcreateBlog(req, res) {
+
+            console.log(req.body)
+
             const {
                 title,
                 body,
@@ -122,141 +131,107 @@ function reqController() {
                 active
             } = req.body
             try {
-                await categorySchema.findOne({
-                    name: category
-                }, async (err, docs) => {
-                    if (err) {
-                        console.log("No record Found")
-                        return res.redirect('/')
-                    }
+                const user_id = req.user.id
+                const updated_by = req.user.id
 
-                    if (!docs) {
-                        console.log("No category for this schema So inseting new category")
-                        let cat = new categorySchema({
-                            name: category,
-                            desc: body
-                        })
-                        await cat.save().then(async (result) => {
-                            console.log("Category Added Successfully")
-                            const user_id = req.user.id
-                            const category_id = cat._id
-
-                            let blog = new blogSchema({
-                                title: title,
-                                is_active: active,
-                                body: body,
-                                user_id: user_id,
-                                category_id: category_id
-                            })
-                            await blog.save().then((result) => {
-                                console.log("Blog Added Successfully")
-                                return res.redirect('/')
-                            }).catch((err) => {
-                                console.log(err)
-                                return res.redirect('/createBlog')
-                            })
-
-                            return res.redirect('/')
-                        }).catch((err) => {
-                            console.log("Error Ocured at blog inserton");
-                            return res.redirect('/createBlog')
-                        })
-                        return res.redirect('/')
-                    }
-
-                    const user_id = req.user.id
-                    const category_id = docs._id
-
-                    let blog = new blogSchema({
-                        title: title,
-                        is_active: active,
-                        body: body,
-                        user_id: user_id,
-                        category_id: category_id
-                    })
-                    await blog.save().then((result) => {
-                        console.log("Blog Added Successfully")
-                        return res.redirect('/')
-                    }).catch((err) => {
-                        console.log(err)
-                        return res.redirect('createBlog')
-                    })
-
-                    return res.redirect('/')
-
-
-
-
+                let blog = new blogSchema({
+                    title: title,
+                    is_active: active,
+                    body: body,
+                    user_id: user_id,
+                    updated_by: updated_by,
+                    category_id: category
 
                 })
+                await blog.save().then((result) => {
+                    console.log("Blog Added Successfully")
+                    return res.redirect('/myBlog')
+                }).catch((err) => {
+                    console.log(err)
+                    return res.redirect('/createBlog')
+                })
 
-                res.render('home')
+                return res.redirect('/')
+
             } catch (err) {
                 console.log(err)
-                return res.redirect('/createBlog')
+                return res.redirect('/ceateBlog')
+            }
+
+        },
+        async myBlog(req, res) {
+            try {
+                await blogSchema.find({
+                    user_id: req.user.id
+                }, async (err, docs) => {
+                    if (err) {
+                        console.log(err)
+                        return res.redirect('/')
+                    }
+                      const categories = await categorySchema.find();
+                console.log(categories)
+                    res.render('myBlog', {
+                        blogs: docs,
+                        category_list:categories
+                    })
+
+                })
+            } catch (err) {
+                console.log(err)
+                return res.redirect('/')
             }
         },
-        async myBlog(req,res)
-        {
-            try{
-            await blogSchema.find({user_id:req.user.id},async(err,docs)=>{
-                if(err)
-                {
-                    console.log(err)
-                    return res.redirect('/')
-                }
+        async updateBlog(req, res) {
+            const id = req.params.id
             
-         res.render('myBlog',{blogs:docs})     
-
-            })
-        }
-        catch(err)
-        {
-            console.log(err)
-            return res.redirect('/')
-        }
-        },
-        async updateBlog(req,res)
-        {
-              const id=req.params.id
-              await blogSchema.findById(id,(err,docs)=>{
-                  if(err)
-                  {
-                      console.log(err)
-                      return res.redirect('/updateBlog')
-                  }
-                  res.render('updateBlog',{blog:docs})
-              })
-             return res.redirect('/updateBlog')
-              
-        },
-        async deleteBlog(req,res)
-        {
-            const id=req.params.id
-
-            await blogSchema.findByIdAndDelete(id,(err,docs)=>{
-                if(err)
-                {
+            await blogSchema.findById(id, async (err, docs) => {
+                if (err) {
                     console.log(err)
-                  return  res.redirect('/myBlog')
+                    return res.redirect('/updateBlog')
+                }
+                const categories = await categorySchema.find();
+                console.log(categories)
+              res.render('updateBlog', {
+                    blog: docs,
+                    categories:categories
+                   
+                })
+            })
+              
+
+        },
+        async deleteBlog(req, res) {
+            const id = req.params.id
+
+            await blogSchema.findByIdAndDelete(id, (err, docs) => {
+                if (err) {
+                    console.log(err)
+                    return res.redirect('/myBlog')
                 }
                 console.log("BLog deleted Successfully")
-              return   res.redirect('/myBlog')
+                return res.redirect('/myBlog')
 
             })
-           return  res.redirect('/myBlog')
+            return res.redirect('/myBlog')
         },
-       async  postUpdateBlog(req,res)
-        {
-            const {id,title,body,active}=req.body
-            await blogSchema.findByIdAndUpdate(id,{
-                   title: title,
-                        is_active: active,
-                        body: body,
-                       
-            },(err,docs)=>{
-                if(err)
-                {
+        async postUpdateBlog(req, res) {
+            const {
+                id,
+                title,
+                category,
+                body,
+                active
+            } = req.body
+            console.log(category)
+            await blogSchema.findByIdAndUpdate(id, {
+                title: title,
+                is_active: active,
+                body: body,
+                category_id:category,
+                updated_by: req.user.id
+
+            }, (err, docs) => {
+                if (err) {
                     console.log(err)
                     res.redirect('/myBlog')
                 }

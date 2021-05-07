@@ -1,6 +1,9 @@
 require('dotenv').config()
 
 const modelSchema = require('../models/user')
+const blogSchema = require('../models/blog')
+const categorySchema = require('../models/category')
+const MongoClient=require('mongodb').MongoClient
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const passport = require('passport')
@@ -202,6 +205,51 @@ function adminController() {
                 users: users
             })
 
+        },
+        async adminDashboard(req,res)
+        {
+         /*   const blogs =await blogSchema.find({is_active:true})
+           console.log(blogs)*/
+           const active=await blogSchema.byActive(true)
+           const inactive=await blogSchema.byActive(false)
+            
+            const categories=await categorySchema.find();
+
+          var loop=[];
+        
+          for(let index=0;index<categories.length;index++)
+          {
+
+            const category=categories[index]
+            const cat=await blogSchema.byCategory(category._id,true)
+            if(cat!='')
+            {
+            loop.push({key:category.name,value:cat.length})
+            }
+          }
+
+          var user_list=[]
+          const users=await modelSchema.find({'role':'User'})
+          for(let index=0;index<users.length;index++)
+          {
+              const user=users[index]
+              const user_data=await blogSchema.byUser(user._id,true)
+                user_list.push({key:user.name,value:user_data})
+
+          }
+
+         
+                res.render('adminDashboard',{active:active.length,inactive:inactive.length,categories:loop,users:user_list})
+        },
+        async adminBlog(req,res)
+        {
+            console.log(req.params.id)
+            const blogs=await blogSchema.find({user_id:req.params.id})
+            const categories=await categorySchema.find();
+            res.render('adminBlog',{
+                blogs:blogs,category_list:categories
+
+            })
         }
     }
 }
