@@ -306,8 +306,13 @@ function reqController() {
             } = req.body
             const categories = await categorySchema.find()
             const cat = await blogSchema.find({
-                category_id: category,
-                is_active: true
+                '$and':[{
+                    category_id:{'$in':category}
+                },
+            {
+                is_active:true
+            }]
+               
             })
 
             res.render('blogsPage', {
