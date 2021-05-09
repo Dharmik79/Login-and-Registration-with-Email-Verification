@@ -237,9 +237,17 @@ function adminController() {
                 user_list.push({key:user.name,value:user_data})
 
           }
+          var userInactive=[]
+           for(let index=0;index<users.length;index++)
+          {
+              const user=users[index]
+              const user_data=await blogSchema.byUser(user._id,false)
+                userInactive.push({key:user.name,value:user_data})
+
+          }
 
          
-                res.render('adminDashboard',{active:active.length,inactive:inactive.length,categories:loop,users:user_list})
+                res.render('adminDashboard',{active:active.length,inactive:inactive.length,categories:loop,users:user_list,userInactive:userInactive})
         },
         async adminBlog(req,res)
         {

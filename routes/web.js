@@ -62,6 +62,19 @@ function initRoutes(app) {
     app.get('/dashboard',adminAuth,adminController().adminDashboard)
 
     app.get('/adminBlog/:id',adminAuth,adminController().adminBlog)
+
+    app.get('/blogsPage',auth,reqController().blogsPage)
+
+    app.post('/search',auth,reqController().search)
+
+app.post('/filter',auth,reqController().filter)
+
+app.post('/filterMyBlog',auth,reqController().filterMyBlog)
+
+
+app.post('/filterByCategoryMyBlog',auth,reqController().filterByCategoryMyBlog)
+
+app.post('/searchMyBlog',auth,reqController().searchMyBlog)
 }
 
 module.exports = initRoutes

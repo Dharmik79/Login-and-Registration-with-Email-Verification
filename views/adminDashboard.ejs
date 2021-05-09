@@ -1,34 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dash</title>
 </head>
+
 <body>
     <h1>Total Active Blog Count : <%= active%></h1>
- <h1>Total InActive Blog Count : <%= inactive%></h1>
-<p>-----------------------------------------------------</p>
-<p>---------------------------------------</p>
+    <h1>Total InActive Blog Count : <%= inactive%></h1>
+    <p>-----------------------------------------------------</p>
     <p>---------------------------------------</p>
-<h1>category wise Blog count With Active Status Only </h1>
-<% categories.forEach(function(category){%>
+    <p>---------------------------------------</p>
+    <h1>category wise Blog count With Active Status Only </h1>
+    <% categories.forEach(function(category){%>
     <h1>category :<%= category.key%></h1>
     <h1>Count:<%= category.value%></h1>
     <%})%>
 
     <p>---------------------------------------</p>
     <p>---------------------------------------</p>
-<h1>User Wise Blog Count (Active )</h1>
-<% users.forEach(function(category){%>
+    <h1>User Wise Blog Count (Active )</h1>
+    <% users.forEach(function(category){%>
+        <% if(category.value.length){%>
     <h1>Name :<%= category.key%></h1>
     <h1>Count:<%= category.value.length%></h1>
-   
-   <a href="/adminBlog/<%= category.value[0].user_id%>"> <button >Check Post And Update</button></a>
-    <%})%>
-    
+        
+    <a href="/adminBlog/<%= category.value[0].user_id%>"> <button>Check Post And Update</button></a>
+    <%}})%>
+
+      <h1>User Wise Blog Count (InActive )</h1>
+    <% userInactive.forEach(function(category){%>
+        <% if(category.value.length){%>
+    <h1>Name :<%= category.key%></h1>
+    <h1>Count:<%= category.value.length%></h1>
+        
+    <a href="/adminBlog/<%= category.value[0].user_id%>"> <button>Check Post And Update</button></a>
+    <%}})%>
+
 
 
 </body>
+
 </html>

@@ -14,6 +14,9 @@ const {
 const {
     render
 } = require('ejs')
+const {
+    geoSearch
+} = require('../models/user')
 
 let transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -155,7 +158,7 @@ function reqController() {
 
             } catch (err) {
                 console.log(err)
-                return res.redirect('/ceateBlog')
+                return res.redirect('/createBlog')
             }
 
         },
@@ -168,11 +171,30 @@ function reqController() {
                         console.log(err)
                         return res.redirect('/')
                     }
-                      const categories = await categorySchema.find();
-                console.log(categories)
+                    const categories = await categorySchema.find();
+                    var loop = [];
+
+                    for (let index = 0; index < categories.length; index++) {
+
+                        const category = categories[index]
+                        const cat = await blogSchema.byUserCategory(category._id, req.user.id, true)
+                        if (cat != '') {
+                            loop.push({
+                                key: category.name,
+                                value: cat.length
+                            })
+                        }
+                    }
+                    const active = await blogSchema.byUser(req.user.id, true)
+                    const inactive = await blogSchema.byUser(req.user.id, false)
                     res.render('myBlog', {
                         blogs: docs,
-                        category_list:categories
+                        category_list: categories,
+                        active: active.length,
+                        inactive: inactive.length,
+                        categories: loop,
+                        filter_category: "true",
+                        categorie: categories
                     })
 
                 })
@@ -183,7 +205,7 @@ function reqController() {
         },
         async updateBlog(req, res) {
             const id = req.params.id
-            
+
             await blogSchema.findById(id, async (err, docs) => {
                 if (err) {
                     console.log(err)
@@ -191,13 +213,13 @@ function reqController() {
                 }
                 const categories = await categorySchema.find();
                 console.log(categories)
-              res.render('updateBlog', {
+                res.render('updateBlog', {
                     blog: docs,
-                    categories:categories
-                   
+                    categories: categories
+
                 })
             })
-              
+
 
         },
         async deleteBlog(req, res) {
@@ -227,7 +249,7 @@ function reqController() {
                 title: title,
                 is_active: active,
                 body: body,
-                category_id:category,
+                category_id: category,
                 updated_by: req.user.id
 
             }, (err, docs) => {
@@ -241,7 +263,211 @@ function reqController() {
             })
 
             return res.redirect('/myBlog')
+        },
+        async blogsPage(req, res) {
+            const blogs = await blogSchema.byActive(true)
+            const categories = await categorySchema.find()
+            res.render('blogsPage', {
+                blogs: blogs,
+                categories: categories
+            })
+        },
+        async search(req, res) {
+            var {
+                dsearch
+            } = req.body
+            const categories = await categorySchema.find()
+            const blogs = await blogSchema.find({
+                '$and': [{
+                        '$or': [{
+                            title: {
+                                '$regex': dsearch
+                            }
+                        }, {
+                            body: {
+                                '$regex': dsearch
+                            }
+                        }]
+                    },
+                    {
+                        is_active: true
+                    }
+                ]
+            })
+
+            res.render('blogsPage', {
+                blogs: blogs,
+                categories: categories
+            })
+        },
+        async filter(req, res) {
+            const {
+                category
+            } = req.body
+            const categories = await categorySchema.find()
+            const cat = await blogSchema.find({
+                category_id: category,
+                is_active: true
+            })
+
+            res.render('blogsPage', {
+                blogs: cat,
+                categories: categories,
+
+            })
+        },
+        async filterMyBlog(req, res) {
+
+            try {
+                const {
+                    filter
+                } = req.body
+
+                console.log(filter)
+                await blogSchema.find({
+                    user_id: req.user.id,
+                    is_active: filter
+                }, async (err, docs) => {
+                    if (err) {
+                        console.log(err)
+                        return res.redirect('/')
+                    }
+                    const categories = await categorySchema.find();
+                    var loop = [];
+
+                    for (let index = 0; index < categories.length; index++) {
+
+                        const category = categories[index]
+                        const cat = await blogSchema.byUserCategory(category._id, req.user.id, true)
+                        if (cat != '') {
+                            loop.push({
+                                key: category.name,
+                                value: cat.length
+                            })
+                        }
+                    }
+                    const active = await blogSchema.byUser(req.user.id, true)
+                    const inactive = await blogSchema.byUser(req.user.id, false)
+                    res.render('myBlog', {
+                        blogs: docs,
+                        category_list: categories,
+                        active: active.length,
+                        inactive: inactive.length,
+                        categories: loop,
+                        filter_category: filter,
+                        categorie: categories
+
+                    })
+
+                })
+            } catch (err) {
+                console.log(err)
+                return res.redirect('/')
+            }
+
+        },
+        async filterByCategoryMyBlog(req, res) {
+
+            try {
+                const {
+                    category
+                } = req.body
+
+                await blogSchema.find({
+                    user_id: req.user.id,
+                    category_id: category
+                }, async (err, docs) => {
+                    if (err) {
+                        console.log(err)
+                        return res.redirect('/')
+                    }
+                    const categories = await categorySchema.find();
+                    var loop = [];
+
+                    for (let index = 0; index < categories.length; index++) {
+
+                        const category = categories[index]
+                        const cat = await blogSchema.byUserCategory(category._id, req.user.id, true)
+                        if (cat != '') {
+                            loop.push({
+                                key: category.name,
+                                value: cat.length
+                            })
+                        }
+                    }
+                    const active = await blogSchema.byUser(req.user.id, true)
+                    const inactive = await blogSchema.byUser(req.user.id, false)
+                    res.render('myBlog', {
+                        blogs: docs,
+                        category_list: categories,
+                        active: active.length,
+                        inactive: inactive.length,
+                        categories: loop,
+                        filter_category:"true",
+                        categorie: categories
+
+                    })
+
+                })
+            } catch (err) {
+                console.log(err)
+                return res.redirect('/')
+            }
+
+
+        },
+        async searchMyBlog(req, res) {
+            var {
+                dsearch
+            } = req.body
+            const categories = await categorySchema.find()
+            const blogs = await blogSchema.find({
+                '$and': [{
+                        '$or': [{
+                            title: {
+                                '$regex': dsearch
+                            }
+                        }, {
+                            body: {
+                                '$regex': dsearch
+                            }
+                        }]
+                    },
+                    {
+                        is_active: true
+                    },{
+                        user_id:req.user.id
+                    }
+                ]
+            })
+            const active = await blogSchema.byUser(req.user.id, true)
+            const inactive = await blogSchema.byUser(req.user.id, false)
+          var loop = [];
+
+                    for (let index = 0; index < categories.length; index++) {
+
+                        const category = categories[index]
+                        const cat = await blogSchema.byUserCategory(category._id, req.user.id, true)
+                        if (cat != '') {
+                            loop.push({
+                                key: category.name,
+                                value: cat.length
+                            })
+                        }
+                    }
+                
+            res.render('myBlog', {
+                blogs: blogs,
+                category_list: categories,
+                active: active.length,
+                inactive: inactive.length,
+                categories: loop,
+                filter_category:"true",
+                categorie: categories
+            })
+
         }
+
     }
 }
 

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blogs of user</title>
+</head>
+
+<body>
+    <form class="form-inline my-2 my-lg-0" action="/search" method="POST">
+        <input class="form-control mr-sm-2" type="text" name="dsearch" placeholder="Search Title or Body ">
+        <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
+    </form>
+    <form class="form-inline my-2 my-lg-0" action="/filter" method="POST">
+          <select name="category" >
+               <option></option>
+    <% categories.forEach(function(category){ %>
+     
+    <option value="<%= category._id%>"><%= category.name %></option>
+
+    <%})%>
+    </select>
+        <button class="btn btn-secondary my-2 my-sm-0" type="submit">Apply</button>
+    </form>
+    <% if(blogs.length==0){%>
+        <h1>No blogs Found</h1>
+        <%}%>
+    <%blogs.forEach(function(blog){%>
+
+    <h1><%= blog.title%></h1>
+    <h3><%= blog.body%></h3>
+    <h1>------------------</h1>
+    <%})%>
+</body>
+
+</html>

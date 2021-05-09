@@ -45,5 +45,9 @@ Blog.statics.byCategory=function(id,is_active)
 {
     return this.find({category_id:id,is_active:is_active})
 }
+Blog.statics.byUserCategory=function(id,user_id,is_active)
+{
+    return this.find({category_id:id,user_id:user_id,is_active:is_active})
+}
 const blog=mongoose.model('blog',Blog)
 module.exports=blog
