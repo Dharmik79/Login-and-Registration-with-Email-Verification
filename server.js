@@ -1,5 +1,5 @@
 const express = require('express')
-
+const fileUpload = require('express-fileupload');
 const path = require('path')
 const cors = require('cors')
 const app = express()
@@ -31,15 +31,13 @@ app.use(passport.session())
 app.set('views', path.join(__dirname, '/views'))
 app.set('view engine', 'ejs')
 
-
+app.use('/uploads',express.static('uploads'))
 app.use((req,res,next)=>{
     res.locals.session =req.session,
     res.locals.user=req.user,
-    
-
     next()
 })
-
+app.use(fileUpload())
 require('./config/conn')
 require('./routes/web')(app)
 

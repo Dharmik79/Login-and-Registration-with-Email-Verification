@@ -7,16 +7,17 @@ const passport = require('passport')
 const nodemailer = require("nodemailer");
 const blogSchema = require('../models/blog')
 const categorySchema = require('../models/category')
-
-const {
-    model
-} = require('mongoose')
-const {
-    render
-} = require('ejs')
-const {
-    geoSearch
-} = require('../models/user')
+const tagSchema = require('../models/tags')
+const fileUpload = require('express-fileupload');
+const path = require('path')
+const unirest = require('unirest')
+var apiCall = unirest("GET",
+    "https://ip-geolocation-ipwhois-io.p.rapidapi.com/json/"
+);
+apiCall.headers({
+    "x-rapidapi-host": "ip-geolocation-ipwhois-io.p.rapidapi.com",
+    "x-rapidapi-key": "srclZqaa9imshAk9Xzz55u27oltLp1SqdiFjsnmva9PTpf2j3f"
+});
 
 let transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -113,37 +114,71 @@ function reqController() {
             res.render('home')
         },
         async createBlog(req, res) {
-            const category = await categorySchema.find();
 
-            if (category) {
-                res.render('createBlog', {
-                    categories: category
-                })
+            try {
+
+                apiCall.end(async function (result) {
+                    if (res.error) throw new Error(result.error);
+                    const category = await categorySchema.find();
+                    const tags = await tagSchema.find()
+
+                    res.render('createBlog', {
+                        categories: category,
+                        tags: tags,
+                        latitude: result.body.latitude,
+                        longitude: result.body.longitude
+
+                    })
+                });
+            } catch (err) {
+                console.log(err)
+                res.redirect('/')
             }
-            res.redirect('/')
 
         },
         async postcreateBlog(req, res) {
-
-            console.log(req.body)
-
             const {
                 title,
                 body,
                 category,
-                active
+                tag,
+                active,
+                latitude,
+                longitude
             } = req.body
+
+
             try {
+
+                let targetFile = req.files.myImage;
+                if (targetFile == null) {
+                    res.redirect('/createBlog')
+                }
+
+                let uploadPath = process.cwd() + "/uploads/" + targetFile.name
+                await targetFile.mv(uploadPath, (err) => {
+                    if (err) {
+                        console.log(err)
+                    } else {
+                        console.log("uploaded Successfully")
+                    }
+                })
+
+
                 const user_id = req.user.id
                 const updated_by = req.user.id
-
                 let blog = new blogSchema({
                     title: title,
                     is_active: active,
                     body: body,
                     user_id: user_id,
                     updated_by: updated_by,
-                    category_id: category
+                    category_id: category,
+                    tag_id: tag,
+                    image: targetFile.name,
+                    location: {
+                        coordinates: [longitude, latitude]
+                    }
 
                 })
                 await blog.save().then((result) => {
@@ -185,6 +220,8 @@ function reqController() {
                             })
                         }
                     }
+                    const tags = await tagSchema.find();
+
                     const active = await blogSchema.byUser(req.user.id, true)
                     const inactive = await blogSchema.byUser(req.user.id, false)
                     res.render('myBlog', {
@@ -194,7 +231,10 @@ function reqController() {
                         inactive: inactive.length,
                         categories: loop,
                         filter_category: "true",
-                        categorie: categories
+                        categorie: categories,
+                        tag_list: tags,
+                        tags: tags
+
                     })
 
                 })
@@ -204,21 +244,28 @@ function reqController() {
             }
         },
         async updateBlog(req, res) {
-            const id = req.params.id
+            try {
+                const id = req.params.id
 
-            await blogSchema.findById(id, async (err, docs) => {
-                if (err) {
-                    console.log(err)
-                    return res.redirect('/updateBlog')
-                }
-                const categories = await categorySchema.find();
-                console.log(categories)
-                res.render('updateBlog', {
-                    blog: docs,
-                    categories: categories
+                await blogSchema.findById(id, async (err, docs) => {
+                    if (err) {
+                        console.log(err)
+                        return res.redirect('/updateBlog')
+                    }
+                    const categories = await categorySchema.find();
+                    const tags = await tagSchema.find()
 
+                    res.render('updateBlog', {
+                        blog: docs,
+                        categories: categories,
+                        tags: tags
+
+                    })
                 })
-            })
+            } catch (err) {
+                console.log(err)
+                return res.redirect('/updateBlog')
+            }
 
 
         },
@@ -242,16 +289,37 @@ function reqController() {
                 title,
                 category,
                 body,
-                active
+                tag,
+                active,
+                image
             } = req.body
-            console.log(category)
-            await blogSchema.findByIdAndUpdate(id, {
+
+            let targetFile = image
+            if (!req.files) {
+                targetFile = image
+            } else {
+                targetFile = req.files.myImage
+                let uploadPath = process.cwd() + "/uploads/" + targetFile.name
+                await targetFile.mv(uploadPath, (err) => {
+                    if (err) {
+                        console.log(err)
+                    } else {
+                        console.log("uploaded Successfully")
+                    }
+                })
+                targetFile = targetFile.name
+            }
+
+            await blogSchema.findOneAndUpdate({
+                _id: id
+            }, {
                 title: title,
                 is_active: active,
                 body: body,
                 category_id: category,
-                updated_by: req.user.id
-
+                updated_by: req.user.id,
+                tag_id: tag,
+                image: targetFile
             }, (err, docs) => {
                 if (err) {
                     console.log(err)
@@ -267,9 +335,11 @@ function reqController() {
         async blogsPage(req, res) {
             const blogs = await blogSchema.byActive(true)
             const categories = await categorySchema.find()
+            const tags = await tagSchema.find()
             res.render('blogsPage', {
                 blogs: blogs,
-                categories: categories
+                categories: categories,
+                tags: tags
             })
         },
         async search(req, res) {
@@ -277,6 +347,7 @@ function reqController() {
                 dsearch
             } = req.body
             const categories = await categorySchema.find()
+            const tags = await tagSchema.find()
             const blogs = await blogSchema.find({
                 '$and': [{
                         '$or': [{
@@ -297,7 +368,8 @@ function reqController() {
 
             res.render('blogsPage', {
                 blogs: blogs,
-                categories: categories
+                categories: categories,
+                tags: tags
             })
         },
         async filter(req, res) {
@@ -305,19 +377,50 @@ function reqController() {
                 category
             } = req.body
             const categories = await categorySchema.find()
+            const tags = await tagSchema.find()
             const cat = await blogSchema.find({
-                '$and':[{
-                    category_id:{'$in':category}
-                },
-            {
-                is_active:true
-            }]
-               
+                '$and': [{
+                        category_id: {
+                            '$in': category
+                        }
+                    },
+                    {
+                        is_active: true
+                    }
+                ]
+
             })
 
             res.render('blogsPage', {
                 blogs: cat,
                 categories: categories,
+                tags: tags
+
+            })
+        },
+        async filterBlogByTag(req, res) {
+            const {
+                tag
+            } = req.body
+            const tags = await tagSchema.find()
+            const categories = await categorySchema.find()
+            const cat = await blogSchema.find({
+                '$and': [{
+                        tag_id: {
+                            '$in': tag
+                        }
+                    },
+                    {
+                        is_active: true
+                    }
+                ]
+
+            })
+
+            res.render('blogsPage', {
+                blogs: cat,
+                categories: categories,
+                tags: tags
 
             })
         },
@@ -351,6 +454,20 @@ function reqController() {
                             })
                         }
                     }
+                    const tags = await tagSchema.find();
+                    var tag_loop = [];
+
+                    for (let index = 0; index < tags.length; index++) {
+
+                        const tag = tags[index]
+                        const cat = await blogSchema.byUserTag(tag._id, req.user.id, true)
+                        if (cat != '') {
+                            loop.push({
+                                key: tag.name,
+                                value: cat.length
+                            })
+                        }
+                    }
                     const active = await blogSchema.byUser(req.user.id, true)
                     const inactive = await blogSchema.byUser(req.user.id, false)
                     res.render('myBlog', {
@@ -360,7 +477,9 @@ function reqController() {
                         inactive: inactive.length,
                         categories: loop,
                         filter_category: filter,
-                        categorie: categories
+                        categorie: categories,
+                        tag_list: tags,
+                        tags: tags
 
                     })
 
@@ -400,6 +519,7 @@ function reqController() {
                             })
                         }
                     }
+                    const tags = await tagSchema.find()
                     const active = await blogSchema.byUser(req.user.id, true)
                     const inactive = await blogSchema.byUser(req.user.id, false)
                     res.render('myBlog', {
@@ -408,9 +528,65 @@ function reqController() {
                         active: active.length,
                         inactive: inactive.length,
                         categories: loop,
-                        filter_category:"true",
-                        categorie: categories
+                        filter_category: "true",
+                        categorie: categories,
+                        tag_list: tags,
+                        tags: tags
 
+
+                    })
+
+                })
+            } catch (err) {
+                console.log(err)
+                return res.redirect('/')
+            }
+
+
+        },
+        async filterByTagMyBlog(req, res) {
+
+            try {
+                const {
+                    tag
+                } = req.body
+
+                await blogSchema.find({
+                    user_id: req.user.id,
+                    tag_id: tag
+                }, async (err, docs) => {
+                    if (err) {
+                        console.log(err)
+                        return res.redirect('/')
+                    }
+                    const categories = await categorySchema.find();
+                    const tags = await tagSchema.find();
+
+                    var loop = [];
+
+                    for (let index = 0; index < categories.length; index++) {
+
+                        const category = categories[index]
+                        const cat = await blogSchema.byUserCategory(category._id, req.user.id, true)
+                        if (cat != '') {
+                            loop.push({
+                                key: category.name,
+                                value: cat.length
+                            })
+                        }
+                    }
+                    const active = await blogSchema.byUser(req.user.id, true)
+                    const inactive = await blogSchema.byUser(req.user.id, false)
+                    res.render('myBlog', {
+                        blogs: docs,
+                        category_list: categories,
+                        active: active.length,
+                        inactive: inactive.length,
+                        categories: loop,
+                        filter_category: "true",
+                        categorie: categories,
+                        tags: tags,
+                        tag_list: tags
                     })
 
                 })
@@ -440,37 +616,61 @@ function reqController() {
                     },
                     {
                         is_active: true
-                    },{
-                        user_id:req.user.id
+                    }, {
+                        user_id: req.user.id
                     }
                 ]
             })
             const active = await blogSchema.byUser(req.user.id, true)
             const inactive = await blogSchema.byUser(req.user.id, false)
-          var loop = [];
+            var loop = [];
+            const tags = await tagSchema.find()
+            for (let index = 0; index < categories.length; index++) {
 
-                    for (let index = 0; index < categories.length; index++) {
+                const category = categories[index]
+                const cat = await blogSchema.byUserCategory(category._id, req.user.id, true)
+                if (cat != '') {
+                    loop.push({
+                        key: category.name,
+                        value: cat.length
+                    })
+                }
+            }
 
-                        const category = categories[index]
-                        const cat = await blogSchema.byUserCategory(category._id, req.user.id, true)
-                        if (cat != '') {
-                            loop.push({
-                                key: category.name,
-                                value: cat.length
-                            })
-                        }
-                    }
-                
             res.render('myBlog', {
                 blogs: blogs,
                 category_list: categories,
                 active: active.length,
                 inactive: inactive.length,
                 categories: loop,
-                filter_category:"true",
-                categorie: categories
+                filter_category: "true",
+                categorie: categories,
+                tag_list: tags,
+                tags: tags
+
             })
 
+        },
+        async filterBlogPagebyLocation(req, res) {
+            const {
+                lat,
+                long,
+                dist
+            } = req.body
+
+            const blogs = await blogSchema.find({
+                location: {
+                    $nearSphere: [long,lat],
+                    $maxDistance:dist
+                }
+            })
+            const categories = await categorySchema.find()
+            const tags = await tagSchema.find()
+            res.render('blogsPage', {
+                blogs: blogs,
+                categories: categories,
+                tags: tags
+            })
         }
 
     }

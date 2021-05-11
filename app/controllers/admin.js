@@ -3,7 +3,8 @@ require('dotenv').config()
 const modelSchema = require('../models/user')
 const blogSchema = require('../models/blog')
 const categorySchema = require('../models/category')
-const MongoClient=require('mongodb').MongoClient
+const tagSchema = require('../models/tags')
+const MongoClient = require('mongodb').MongoClient
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const passport = require('passport')
@@ -28,7 +29,7 @@ function adminController() {
         return req.user.role === 'Admin' ? '/adminhome' : '/'
     }
     return {
-     
+
         async addUser(req, res) {
             res.render('addnewUser')
         },
@@ -194,69 +195,272 @@ function adminController() {
                 User: User
             })
         },
-       
+
         async adminhome(req, res) {
 
             const users = await modelSchema.find({
                 role: "User"
             })
-           
+
             res.render('adminhome', {
                 users: users
             })
 
         },
-        async adminDashboard(req,res)
-        {
-         /*   const blogs =await blogSchema.find({is_active:true})
-           console.log(blogs)*/
-           const active=await blogSchema.byActive(true)
-           const inactive=await blogSchema.byActive(false)
-            
-            const categories=await categorySchema.find();
+        async adminDashboard(req, res) {
+            /*   const blogs =await blogSchema.find({is_active:true})
+              console.log(blogs)*/
+            const active = await blogSchema.byActive(true)
+            const inactive = await blogSchema.byActive(false)
+            const tags = await tagSchema.find()
+            const categories = await categorySchema.find();
 
-          var loop=[];
-        
-          for(let index=0;index<categories.length;index++)
-          {
+            var loop = [];
 
-            const category=categories[index]
-            const cat=await blogSchema.byCategory(category._id,true)
-            if(cat!='')
-            {
-            loop.push({key:category.name,value:cat.length})
+            for (let index = 0; index < categories.length; index++) {
+
+                const category = categories[index]
+                const cat = await blogSchema.byCategory(category._id, true)
+                if (cat != '') {
+                    loop.push({
+                        key: category.name,
+                        value: cat.length
+                    })
+                }
             }
-          }
 
-          var user_list=[]
-          const users=await modelSchema.find({'role':'User'})
-          for(let index=0;index<users.length;index++)
-          {
-              const user=users[index]
-              const user_data=await blogSchema.byUser(user._id,true)
-                user_list.push({key:user.name,value:user_data})
+            var user_list = []
+            const users = await modelSchema.find({
+                'role': 'User'
+            })
+            for (let index = 0; index < users.length; index++) {
+                const user = users[index]
+                const user_data = await blogSchema.byUser(user._id, true)
+                user_list.push({
+                    key: user.name,
+                    value: user_data
+                })
 
-          }
-          var userInactive=[]
-           for(let index=0;index<users.length;index++)
-          {
-              const user=users[index]
-              const user_data=await blogSchema.byUser(user._id,false)
-                userInactive.push({key:user.name,value:user_data})
+            }
+            var userInactive = []
+            for (let index = 0; index < users.length; index++) {
+                const user = users[index]
+                const user_data = await blogSchema.byUser(user._id, false)
 
-          }
+                userInactive.push({
+                    key: user.name,
+                    value: user_data
+                })
 
-         
-                res.render('adminDashboard',{active:active.length,inactive:inactive.length,categories:loop,users:user_list,userInactive:userInactive})
+            }
+
+            res.render('adminDashboard', {
+                active: active.length,
+                inactive: inactive.length,
+                categories: loop,
+                users: user_list,
+                userInactive: userInactive,
+                tags: tags
+            })
         },
-        async adminBlog(req,res)
-        {
-            console.log(req.params.id)
-            const blogs=await blogSchema.find({user_id:req.params.id})
-            const categories=await categorySchema.find();
-            res.render('adminBlog',{
-                blogs:blogs,category_list:categories
+        async adminBlog(req, res) {
 
+            const blogs = await blogSchema.find({
+                user_id: req.params.id
+            })
+            const categories = await categorySchema.find();
+            const tags=await tagSchema.find();
+            res.render('adminBlog', {
+                blogs: blogs,
+                category_list: categories,
+                tag_list:tags
+            })
+        },
+        async searchByUser(req, res) {
+            const {
+                usearch
+            } = req.body
+            const active = await blogSchema.byActive(true)
+            const inactive = await blogSchema.byActive(false)
+            const tags = await tagSchema.find()
+            const categories = await categorySchema.find();
+
+            var loop = [];
+
+
+            for (let index = 0; index < categories.length; index++) {
+
+                const category = categories[index]
+                const cat = await blogSchema.byCategory(category._id, true)
+                if (cat != '') {
+                    loop.push({
+                        key: category.name,
+                        value: cat.length
+                    })
+                }
+            }
+
+            var user_list = []
+
+            const users = await modelSchema.find({
+                'role': 'User',
+                name: usearch
+            })
+            const user_inList = await modelSchema.find({
+                'role': 'User',
+
+            })
+            for (let index = 0; index < users.length; index++) {
+                const user = users[index]
+                const user_data = await blogSchema.byUser(user._id, true)
+                user_list.push({
+                    key: user.name,
+                    value: user_data
+                })
+
+            }
+            var userInactive = []
+            for (let index = 0; index < users.length; index++) {
+                const user = users[index]
+                const user_data = await blogSchema.byUser(user._id, false)
+
+                userInactive.push({
+                    key: user.name,
+                    value: user_data
+                })
+            }
+            res.render('adminDashboard', {
+                active: active.length,
+                inactive: inactive.length,
+                categories: loop,
+                users: user_list,
+                userInactive: userInactive,
+                tags: tags
+            })
+
+        },
+        async filterByTagAdminBlog(req, res) {
+            const {
+                tag
+            } = req.body
+
+            const active = await blogSchema.byActive(true)
+            const inactive = await blogSchema.byActive(false)
+
+            const categories = await categorySchema.find();
+            const tags = await tagSchema.find()
+            var loop = [];
+
+
+            for (let index = 0; index < categories.length; index++) {
+
+                const category = categories[index]
+                const cat = await blogSchema.byCategory(category._id, true)
+                if (cat != '') {
+                    loop.push({
+                        key: category.name,
+                        value: cat.length
+                    })
+                }
+            }
+
+            var user_list = []
+
+            const users = await modelSchema.find({
+                'role': 'User',
+            })
+
+            for (let index = 0; index < users.length; index++) {
+                const user = users[index]
+                const user_data = await blogSchema.find({
+                    user_id:user._id,tag_id:{'$in':tag},is_active:true
+                })
+                user_list.push({
+                    key: user.name,
+                    value: user_data
+                })
+
+            }
+            var userInactive = []
+            for (let index = 0; index < users.length; index++) {
+                const user = users[index]
+               const user_data = await blogSchema.find({
+                    user_id:user._id,tag_id:{'$in':tag},is_active:false
+                })
+                userInactive.push({
+                    key: user.name,
+                    value: user_data
+                })
+
+            }
+            res.render('adminDashboard', {
+                active: active.length,
+                inactive: inactive.length,
+                categories: loop,
+                users: user_list,
+                userInactive: userInactive,
+                tags: tags
+            })
+        },
+        async filterDashboardbyLocation(req,res)
+        {
+             const active = await blogSchema.byActive(true)
+            const inactive = await blogSchema.byActive(false)
+            const tags = await tagSchema.find()
+            const categories = await categorySchema.find();
+            const {lat,long,dist}=req.body
+            var loop = [];
+
+            for (let index = 0; index < categories.length; index++) {
+
+                const category = categories[index]
+                const cat = await blogSchema.byCategory(category._id, true)
+                if (cat != '') {
+                    loop.push({
+                        key: category.name,
+                        value: cat.length
+                    })
+                }
+            }
+
+            var user_list = []
+            const users = await modelSchema.find({
+                'role': 'User'
+            })
+            for (let index = 0; index < users.length; index++) {
+                const user = users[index]
+                const user_data = await blogSchema.find({user_id:user._id,is_active:true, location: {
+                    $nearSphere: [long,lat],
+                    $maxDistance:dist
+                }})
+                user_list.push({
+                    key: user.name,
+                    value: user_data
+                })
+
+            }
+            var userInactive = []
+            for (let index = 0; index < users.length; index++) {
+                const user = users[index]
+ 
+ const user_data = await blogSchema.find({user_id:user._id,is_active:false, location: {
+                    $nearSphere: [long,lat],
+                    $maxDistance:dist
+                }})
+                userInactive.push({
+                    key: user.name,
+                    value: user_data
+                })
+
+            }
+
+            res.render('adminDashboard', {
+                active: active.length,
+                inactive: inactive.length,
+                categories: loop,
+                users: user_list,
+                userInactive: userInactive,
+                tags: tags
             })
         }
     }

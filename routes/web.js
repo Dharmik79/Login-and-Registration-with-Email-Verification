@@ -71,10 +71,19 @@ app.post('/filter',auth,reqController().filter)
 
 app.post('/filterMyBlog',auth,reqController().filterMyBlog)
 
+app.post('/filterByTagMyBlog',auth,reqController().filterByTagMyBlog)
 
 app.post('/filterByCategoryMyBlog',auth,reqController().filterByCategoryMyBlog)
 
 app.post('/searchMyBlog',auth,reqController().searchMyBlog)
+app.post('/filterBlogByTag',auth,reqController().filterBlogByTag)
+app.post('/searchByUser',adminAuth,adminController().searchByUser)
+
+app.post('/filterByTagAdminBlog',adminAuth,adminController().filterByTagAdminBlog)
+
+app.post('/filterBlogPagebyLocation',auth,reqController().filterBlogPagebyLocation)
+
+app.post('/filterDashboardbyLocation',adminAuth,adminController().filterDashboardbyLocation)
 }
 
 module.exports = initRoutes

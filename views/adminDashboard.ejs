@@ -9,6 +9,7 @@
 </head>
 
 <body>
+    <h1>Admin Dashboard</h1>
     <h1>Total Active Blog Count : <%= active%></h1>
     <h1>Total InActive Blog Count : <%= inactive%></h1>
     <p>-----------------------------------------------------</p>
@@ -22,6 +23,37 @@
 
     <p>---------------------------------------</p>
     <p>---------------------------------------</p>
+
+    <h1>Search by User</h1>
+
+ <form class="form-inline my-2 my-lg-0" action="/searchByUser" method="POST">
+        <input class="form-control mr-sm-2" type="text" name="usearch" placeholder="Search User">
+        <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
+    </form>
+   
+<h1>----------------</h1>
+  <h1>-------</h1>
+    <h1>Filter By Tag</h1>
+  <form class="form-inline my-2 my-lg-0" action="/filterByTagAdminBlog" method="POST">
+          <select name="tag" multiple required>
+               <option></option>
+    <% tags.forEach(function(tag){ %>
+        <option value="<%= tag._id%>"><%= tag.name %></option>
+
+        <%})%>
+        </select>
+        <button class="btn btn-secondary my-2 my-sm-0" type="submit">Apply</button>
+    </form>
+
+    <h1>------------------</h1>
+     <h1>Filter By Location</h1>
+<form action="filterDashboardbyLocation" method="POST">
+    <input type="text" name="lat" placeholder="Latitude">
+     <input type="text" name="long" placeholder="Longitude">
+      <input type="text" name="dist" placeholder="Min Dist">
+      <button type="submit">SUBMIT</button>
+</form>
+<h1>----</h1>
     <h1>User Wise Blog Count (Active )</h1>
     <% users.forEach(function(category){%>
         <% if(category.value.length){%>
@@ -39,8 +71,10 @@
         
     <a href="/adminBlog/<%= category.value[0].user_id%>"> <button>Check Post And Update</button></a>
     <%}})%>
+  
 
-
+    <j1>--------------------</j1>
+    <h1>------------------------------------</h1>
 
 </body>
 
