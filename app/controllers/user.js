@@ -11,6 +11,7 @@ const tagSchema = require('../models/tags')
 const fileUpload = require('express-fileupload');
 const path = require('path')
 const unirest = require('unirest')
+const blog = require('../models/blog')
 var apiCall = unirest("GET",
     "https://ip-geolocation-ipwhois-io.p.rapidapi.com/json/"
 );
@@ -147,6 +148,7 @@ function reqController() {
                 longitude
             } = req.body
 
+            tags = tag.split(" #")
 
             try {
 
@@ -163,8 +165,38 @@ function reqController() {
                         console.log("uploaded Successfully")
                     }
                 })
+                var tag_list = []
+                for (let index = 0; index < tags.length; index++) {
+                    var tag_name;
+                    if (index == 0) {
+                        tag_name = tags[index]
+                    } else {
+                        tag_name = '#' + tags[index]
+                    }
 
+                    const tag_data = await tagSchema.find({
+                        name: tag_name
+                    })
+                    if (tag_data != '') {
+                        tag_list.push(tag_data._id)
 
+                    } else {
+
+                        const new_tag = new tagSchema({
+                            name: tag_name.trim(),
+                            created_by: req.user.id,
+                            updated_by: req.user.id,
+                            slug: tag_name.replace(/\s+/g, '')
+                        })
+                        await new_tag.save().then((result) => {
+                            console.log("tag Added Successfully")
+                            tag_list.push(new_tag._id)
+                        }).catch((err) => {
+                            console.log("Error occured while adding new Tag")
+                        })
+
+                    }
+                }
                 const user_id = req.user.id
                 const updated_by = req.user.id
                 let blog = new blogSchema({
@@ -174,7 +206,7 @@ function reqController() {
                     user_id: user_id,
                     updated_by: updated_by,
                     category_id: category,
-                    tag_id: tag,
+                    tag_id: tag_list,
                     image: targetFile.name,
                     location: {
                         coordinates: [longitude, latitude]
@@ -254,11 +286,17 @@ function reqController() {
                     }
                     const categories = await categorySchema.find();
                     const tags = await tagSchema.find()
-
+                    var tag_list = []
+                    for (let index = 0; index < tags.length; index++) {
+                        const tag = tags[index]
+                        if (docs.tag_id.includes(tag._id)) {
+                            tag_list.push(tag.name)
+                        }
+                    }
                     res.render('updateBlog', {
                         blog: docs,
                         categories: categories,
-                        tags: tags
+                        tags: tag_list
 
                     })
                 })
@@ -289,7 +327,7 @@ function reqController() {
                 title,
                 category,
                 body,
-                tag,
+                tags,
                 active,
                 image
             } = req.body
@@ -309,16 +347,45 @@ function reqController() {
                 })
                 targetFile = targetFile.name
             }
+            var tags_list=tags.split(',')
+            
+           var tag_list=[]
+            for (let index = 0; index < tags_list.length; index++) {
+                var tag_name=tags_list[index]
+                
+                const tag_data = await tagSchema.find({
+                    name: tag_name
+                })
+                if (tag_data != '') {
+                    tag_list.push(tag_data._id)
+
+                } else {
+
+                    const new_tag = new tagSchema({
+                        name: tag_name.trim(),
+                        created_by: req.user.id,
+                        updated_by: req.user.id,
+                        slug: tag_name.replace(/\s+/g, '')
+                    })
+                    await new_tag.save().then((result) => {
+                        console.log("tag Added Successfully")
+                        tag_list.push(new_tag._id)
+                    }).catch((err) => {
+                        console.log("Error occured while adding new Tag")
+                    })
+
+                }
+            }
 
             await blogSchema.findOneAndUpdate({
-                _id: id
+            _id: id
             }, {
                 title: title,
                 is_active: active,
                 body: body,
                 category_id: category,
                 updated_by: req.user.id,
-                tag_id: tag,
+                tag_id:tag_list,
                 image: targetFile
             }, (err, docs) => {
                 if (err) {
@@ -660,8 +727,8 @@ function reqController() {
 
             const blogs = await blogSchema.find({
                 location: {
-                    $nearSphere: [long,lat],
-                    $maxDistance:dist
+                    $nearSphere: [long, lat],
+                    $maxDistance: dist
                 }
             })
             const categories = await categorySchema.find()

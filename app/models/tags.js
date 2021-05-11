@@ -6,7 +6,20 @@ const Tag=mongoose.Schema({
   {
       type:String,
       required:true
+  },
+  created_by:{
+    type:String,
+    required:true
+  },
+  updated_by:{
+    type:String,
+    required:true
+  },slug:{
+    type:String,
+    required:true
   }
+},{
+  timestamps:true
 }
 )
 

@@ -38,15 +38,7 @@
     <%})%>
     </select>
 
-          <select name="tag" multiple required>
-    <% tags.forEach(function(tag){ %>
-      <% if(blog.tag_id.includes(tag._id)){%>
-    <option value="<%= tag._id%>" selected><%= tag.name %></option>
-<% }else{%>
- <option value="<%= tag._id%>"><%= tag.name %></option>
-  <%}%>
-    <%})%>
-    </select>
+        <input name="tags" required value="<%=tags%>" placeholder="Tags with comma">
     <button type="submit">SUBMIT</button><br><br><br>
 
   </form>

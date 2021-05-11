@@ -19,14 +19,14 @@ const Blog = mongoose.Schema({
         required: true
     },
     location: {
-     type: {
-    type: String,
-    default: "Point",
-  },
-  coordinates: {
-    type: [Number],
-    index: "2dsphere"
-  }
+        type: {
+            type: String,
+            default: "Point",
+        },
+        coordinates: {
+            type: [Number],
+            index: "2dsphere"
+        }
     },
 
     category_id: [{
